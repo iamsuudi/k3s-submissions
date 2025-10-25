@@ -1,10 +1,22 @@
-# Stage 1: Build
+# Build stage
 FROM golang:1.25 AS builder
-WORKDIR /src
-COPY . .
-RUN go mod tidy && go build -o /app .
 
-# Stage 2: Run
-FROM gcr.io/distroless/base-debian12
-COPY --from=builder /app /app
-ENTRYPOINT ["/app"]
+WORKDIR /app
+COPY go.mod ./
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server
+
+# Runtime stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+COPY --from=builder /server .
+
+# Default port
+EXPOSE 3000 
+
+CMD ["./server"]
