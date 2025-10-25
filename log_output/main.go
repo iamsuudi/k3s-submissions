@@ -5,6 +5,10 @@ import (
 	"encoding/base64"
 	"log"
 	"time"
+	"fmt"
+	"net/http"
+	"os"
+	"strings"
 )
 
 func randomString() string {
@@ -25,13 +29,32 @@ func randomString() string {
 }
 
 func main() {
-	randomStr := randomString()
-	log.Println(randomStr)
-
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		log.Println(randomStr)
+	// Get port from environment variable or default to 3000
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
 	}
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Skip favicon requests
+		if strings.Contains(r.URL.Path, "favicon.ico") {
+			return
+		}
+
+		// Get current time
+		currentTime := time.Now()
+
+		// Format the timestamp
+		formattedTime := currentTime.Format("20060-01-02 15:04:05")
+
+		stringNow := randomString()
+		fmt.Println("--------------------")
+		fmt.Printf("[%s] Responding with %s\n", formattedTime, stringNow)
+		
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w, "%s: %s\n", formattedTime, stringNow)
+	})
+
+	fmt.Printf("Server listening on port %s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
